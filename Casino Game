@@ -1,0 +1,82 @@
+import java.io.*;
+import java.util.*;
+
+public class CasinoGame {
+    private static final String SCORE_FILE = "scores.txt";
+    private static final Random RANDOM = new Random();
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        String playerName;
+        
+        System.out.println("Welcome to the Casino Slot Machine Game!");
+        System.out.print("Enter your name: ");
+        playerName = scanner.nextLine();
+        
+        boolean playAgain = true;
+        while (playAgain) {
+            playGame(playerName);
+            System.out.print("Do you want to play again? (yes/no): ");
+            playAgain = scanner.nextLine().equalsIgnoreCase("yes");
+        }
+        
+        System.out.println("Thank you for playing! Goodbye!");
+        scanner.close();
+    }
+
+    private static void playGame(String playerName) {
+        int score = spinReels();
+        System.out.println("You scored: " + score + " points");
+        recordScore(playerName, score);
+        displayTopScore();
+    }
+
+    private static int spinReels() {
+        String[] symbols = {"Cherry", "Lemon", "Orange", "Plum", "Bell", "Bar"};
+        String[] result = new String[3];
+        
+        for (int i = 0; i < 3; i++) {
+            result[i] = symbols[RANDOM.nextInt(symbols.length)];
+        }
+        
+        System.out.println("You spun: " + String.join(" | ", result));
+        
+        if (result[0].equals(result[1]) && result[1].equals(result[2])) {
+            return 100; // Jackpot
+        } else if (result[0].equals(result[1]) || result[1].equals(result[2]) || result[0].equals(result[2])) {
+            return 10; // Partial match
+        } else {
+            return 0; // No match
+        }
+    }
+
+    private static void recordScore(String playerName, int score) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(SCORE_FILE, true))) {
+            writer.write(playerName + ":" + score);
+            writer.newLine();
+        } catch (IOException e) {
+            System.err.println("Error recording score: " + e.getMessage());
+        }
+    }
+
+    private static void displayTopScore() {
+        Map<String, Integer> scores = new HashMap<>();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(SCORE_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":");
+                String name = parts[0];
+                int score = Integer.parseInt(parts[1]);
+                scores.put(name, Math.max(scores.getOrDefault(name, 0), score));
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading scores: " + e.getMessage());
+        }
+        
+        scores.entrySet()
+              .stream()
+              .max(Map.Entry.comparingByValue())
+              .ifPresent(entry -> System.out.println("Top score: " + entry.getKey() + " with " + entry.getValue() + " points"));
+    }
+}
